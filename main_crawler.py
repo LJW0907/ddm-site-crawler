@@ -3,7 +3,7 @@ import json
 import os
 import boto3
 from datetime import datetime
-from crawlers import warak_crawling  # 올바른 import
+from crawlers import warak_crawler  # 이름 변경
 
 
 def main():
@@ -11,7 +11,7 @@ def main():
 
     # 1. 와락 크롤링
     try:
-        warak_data = warak_crawling.crawl_warak_programs()  # 함수명 수정
+        warak_data = warak_crawler.crawl_warak_programs()
         results["warak"] = {
             "data": warak_data,
             "count": len(warak_data),
@@ -20,19 +20,21 @@ def main():
     except Exception as e:
         results["warak"] = {"error": str(e)}
 
-    # 통합 결과 저장
-    with open("all_programs.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
+    # 각 사이트별로 개별 파일 저장
+    for site_name, site_data in results.items():
+        filename = f"{site_name}_programs.json"
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(site_data, f, ensure_ascii=False, indent=2)
 
-    # S3 업로드
-    if "GITHUB_ACTIONS" in os.environ:
-        s3 = boto3.client("s3")
-        s3.upload_file(
-            "all_programs.json",
-            "test-dondaemoon-school-20250822",
-            "dynamic_programs/all_programs.json",
-        )
-        print("S3 업로드 완료")
+        # S3에도 개별 업로드
+        if "GITHUB_ACTIONS" in os.environ:
+            s3 = boto3.client("s3")
+            s3.upload_file(
+                filename,
+                "test-dondaemoon-school-20250822",
+                f"dynamic_programs/{filename}",  # warak_programs.json으로 저장됨
+            )
+            print(f"{filename} S3 업로드 완료")
 
 
 if __name__ == "__main__":

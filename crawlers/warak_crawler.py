@@ -124,30 +124,3 @@ def crawl_warak_programs():
         driver.quit()
 
     return programs
-
-
-# --- 실행 부분 ---
-if __name__ == "__main__":
-    print("동대문 와락 사이트에서 '미래 & 모집중'인 프로그램 정보를 크롤링합니다...")
-    available_programs = crawl_warak_programs()
-
-    if available_programs:
-        print(
-            f"✅ 성공! 총 {len(available_programs)}개의 유효한 프로그램을 찾았습니다."
-        )
-
-        # JSON 파일 저장
-        with open("warak_programs.json", "w", encoding="utf-8") as f:
-            json.dump(available_programs, f, ensure_ascii=False, indent=4)
-
-        # S3 업로드 (GitHub Actions 환경에서만)
-        if os.environ.get("GITHUB_ACTIONS"):
-            s3 = boto3.client("s3")
-            s3.upload_file(
-                "warak_programs.json",
-                "test-dondaemoon-school-20250822",
-                "dynamic_programs/warak_programs.json",
-            )
-            print("S3 업로드 완료")
-    else:
-        print("❌ 현재 신청 가능한 미래의 프로그램이 없습니다.")
