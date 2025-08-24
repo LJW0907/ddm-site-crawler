@@ -1,0 +1,43 @@
+name: Weekly Program Crawler
+
+on:
+  schedule:
+    # 매주 월요일 오전 9시 (한국시간)
+    - cron: "0 0 * * 1"
+  workflow_dispatch: # 수동 실행 버튼
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v3
+
+      - name: Python 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Chrome 설치
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      - name: 파이썬 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 크롤링 실행
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-2
+        run: python main_crawler.py
+
+      - name: 결과 업로드 (Artifact로 보관)
+        uses: actions/upload-artifact@v3
+        with:
+          name: crawling-results
+          path: |
+            *.json
+          retention-days: 30
