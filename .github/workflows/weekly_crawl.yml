@@ -2,9 +2,8 @@ name: Weekly Program Crawler
 
 on:
   schedule:
-    # 매주 월요일 오전 9시 (한국시간)
     - cron: "0 0 * * 1"
-  workflow_dispatch: # 수동 실행 버튼
+  workflow_dispatch:
 
 jobs:
   crawl:
@@ -12,10 +11,10 @@ jobs:
 
     steps:
       - name: 코드 체크아웃
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v3 → v4
 
       - name: Python 설정
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4 → v5
         with:
           python-version: "3.9"
 
@@ -32,10 +31,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-southeast-2
-        run: python main_crawler.py
+        run: python warak_crawling.py
 
       - name: 결과 업로드 (Artifact로 보관)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # v3 → v4로 변경
         with:
           name: crawling-results
           path: |
