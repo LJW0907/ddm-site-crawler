@@ -9,6 +9,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from datetime import datetime
 import json
+import boto3
+import os
 
 
 # --- ★★★ 핵심 변경점: 여러 날짜를 모두 확인하도록 함수 강화 ★★★ ---
@@ -131,3 +133,23 @@ if __name__ == "__main__":
             json.dump(available_programs, f, ensure_ascii=False, indent=4)
     else:
         print("❌ 현재 신청 가능한 미래의 프로그램이 없습니다.")
+
+# S3에 추가하는 부분
+if __name__ == "__main__":
+    print("크롤링 시작...")
+    available_programs = crawl_warak_programs()
+
+    if available_programs:
+        # JSON 파일 저장
+        with open("warak_programs.json", "w", encoding="utf-8") as f:
+            json.dump(available_programs, f, ensure_ascii=False, indent=4)
+
+        # S3 업로드 (GitHub Actions 환경에서만)
+        if os.environ.get("GITHUB_ACTIONS"):
+            s3 = boto3.client("s3")
+            s3.upload_file(
+                "warak_programs.json",
+                "test-dondaemoon-school-20250822",
+                "dynamic_programs/warak_programs.json",
+            )
+            print("S3 업로드 완료")
