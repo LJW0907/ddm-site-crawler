@@ -3,7 +3,7 @@ import json
 import os
 import boto3
 from datetime import datetime
-from crawlers import warak_crawling
+from crawlers import warak_crawling  # 올바른 import
 
 
 def main():
@@ -11,7 +11,7 @@ def main():
 
     # 1. 와락 크롤링
     try:
-        warak_data = warak_crawler.crawl_warak_programs()
+        warak_data = warak_crawling.crawl_warak_programs()  # 함수명 수정
         results["warak"] = {
             "data": warak_data,
             "count": len(warak_data),
@@ -19,9 +19,6 @@ def main():
         }
     except Exception as e:
         results["warak"] = {"error": str(e)}
-
-    # 2. 추후 다른 사이트 추가
-    # results['other_site'] = other_crawler.crawl()
 
     # 통합 결과 저장
     with open("all_programs.json", "w", encoding="utf-8") as f:
@@ -35,6 +32,7 @@ def main():
             "test-dondaemoon-school-20250822",
             "dynamic_programs/all_programs.json",
         )
+        print("S3 업로드 완료")
 
 
 if __name__ == "__main__":

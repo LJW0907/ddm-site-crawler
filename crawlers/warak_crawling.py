@@ -119,7 +119,7 @@ def crawl_warak_programs():
     return programs
 
 
-# --- 실행 부분 (이전과 동일) ---
+# --- 실행 부분 ---
 if __name__ == "__main__":
     print("동대문 와락 사이트에서 '미래 & 모집중'인 프로그램 정보를 크롤링합니다...")
     available_programs = crawl_warak_programs()
@@ -128,18 +128,7 @@ if __name__ == "__main__":
         print(
             f"✅ 성공! 총 {len(available_programs)}개의 유효한 프로그램을 찾았습니다."
         )
-        print("결과를 warak_programs.json 파일에 저장합니다.")
-        with open("warak_programs.json", "w", encoding="utf-8") as f:
-            json.dump(available_programs, f, ensure_ascii=False, indent=4)
-    else:
-        print("❌ 현재 신청 가능한 미래의 프로그램이 없습니다.")
 
-# S3에 추가하는 부분
-if __name__ == "__main__":
-    print("크롤링 시작...")
-    available_programs = crawl_warak_programs()
-
-    if available_programs:
         # JSON 파일 저장
         with open("warak_programs.json", "w", encoding="utf-8") as f:
             json.dump(available_programs, f, ensure_ascii=False, indent=4)
@@ -153,3 +142,5 @@ if __name__ == "__main__":
                 "dynamic_programs/warak_programs.json",
             )
             print("S3 업로드 완료")
+    else:
+        print("❌ 현재 신청 가능한 미래의 프로그램이 없습니다.")
