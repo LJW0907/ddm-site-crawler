@@ -1,8 +1,8 @@
-name: Weekly Program Crawler
+name: Bi-Weekly Program Crawler
 
 on:
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: "0 15 * * 2,5"
   workflow_dispatch:
 
 jobs:
