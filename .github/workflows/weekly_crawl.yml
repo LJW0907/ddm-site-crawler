@@ -25,7 +25,7 @@ jobs:
 
       - name: 파이썬 패키지 설치
         run: |
-          pip install selenium beautifulsoup4 boto3 lxml
+          pip install -r requirements.txt  # 이 줄이 중요!
 
       - name: 크롤링 실행
         env:
