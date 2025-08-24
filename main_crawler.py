@@ -1,8 +1,9 @@
 import sys
 import json
+import os
 import boto3
 from datetime import datetime
-from crawlers import warak_crawler
+from crawlers import warak_crawling
 
 
 def main():

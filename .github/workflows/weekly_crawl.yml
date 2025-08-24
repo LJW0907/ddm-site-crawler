@@ -2,41 +2,69 @@ name: Weekly Program Crawler
 
 on:
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: '0 0 * * 1'
   workflow_dispatch:
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: 코드 체크아웃
-        uses: actions/checkout@v4 # v3 → v4
+    - name: 코드 체크아웃
+      uses: actions/checkout@v4
+    
+    - name: Python 설정
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    
+    - name: Chrome 설치
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser
+    
+    - name: 파이썬 패키지 설치
+      run: pip install -r requirements.txt
+    
+    - name: 크롤링 실행
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ap-southeast-2
+      run: |
+        cd crawlers
+        python warak_crawling.py
+    
+    - name: S3 업로드
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ap-southeast-2
+      run: |
+        pip install boto3
+        python -c "
+import boto3
+import json
+import os
 
-      - name: Python 설정
-        uses: actions/setup-python@v5 # v4 → v5
-        with:
-          python-version: "3.9"
+s3 = boto3.client('s3')
 
-      - name: Chrome 설치
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
-
-      - name: 파이썬 패키지 설치
-        run: pip install -r requirements.txt
-
-      - name: 크롤링 실행
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-southeast-2
-        run: python warak_crawling.py
-
-      - name: 결과 업로드 (Artifact로 보관)
-        uses: actions/upload-artifact@v4 # v3 → v4로 변경
-        with:
-          name: crawling-results
-          path: |
-            *.json
-          retention-days: 30
+# 크롤링 결과 파일이 있는지 확인
+if os.path.exists('crawlers/warak_programs.json'):
+    s3.upload_file(
+        'crawlers/warak_programs.json',
+        'test-dondaemoon-school-20250822',
+        'dynamic_programs/warak_programs.json'
+    )
+    print('S3 업로드 완료')
+else:
+    print('크롤링 결과 파일 없음')
+"
+    
+    - name: 결과 업로드 (Artifact로 보관)
+      uses: actions/upload-artifact@v4
+      with:
+        name: crawling-results
+        path: |
+          crawlers/*.json
+        retention-days: 30
