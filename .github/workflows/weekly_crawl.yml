@@ -18,23 +18,24 @@ jobs:
         with:
           python-version: "3.9"
 
-      - name: Chrome 설치
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
+      - name: Chrome 브라우저 설정
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
 
       - name: 파이썬 패키지 설치
-        run: pip install -r requirements.txt
+        run: |
+          pip install selenium beautifulsoup4 boto3 lxml
 
       - name: 크롤링 실행
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-southeast-2
-        run: |
-          python main_crawler.py  # main_crawler.py 실행으로 변경
+          GITHUB_ACTIONS: true
+        run: python main_crawler.py
 
-      - name: 결과 업로드 (Artifact로 보관)
+      - name: 결과 업로드
         uses: actions/upload-artifact@v4
         with:
           name: crawling-results
