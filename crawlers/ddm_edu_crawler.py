@@ -15,16 +15,8 @@ class DDMEducationCrawler:
         self.base_url = "https://www.ddm.go.kr"
         self.headers = {"User-Agent": "Mozilla/5.0"}
         self.today = datetime.now().date()
-
-        # 테스트 모드 체크 (환경변수로 제어)
-        self.test_mode = os.environ.get("CRAWLER_TEST_MODE", "false").lower() == "true"
-
-        # 테스트 모드일 때는 3개월 전까지, 일반 모드는 기존대로
-        if self.test_mode:
-            self.date_threshold = self.today - relativedelta(months=3)
-            print(f"[TEST MODE] 3개월 범위로 크롤링 (기준일: {self.date_threshold})")
-        else:
-            self.date_threshold = self.today
+        # 미래 이벤트만 수집
+        self.date_threshold = self.today
 
     def _is_future_event(self, date_string):
         """테스트 모드에서는 3개월 전까지, 일반 모드에서는 미래 이벤트만"""
