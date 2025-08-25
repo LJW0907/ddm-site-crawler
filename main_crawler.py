@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from crawlers.warak_crawler import crawl_warak_programs
-from crawlers.ddm_edu_crawler import DDMEducationCrawler  # 클래스 import
+from crawlers.ddm_edu_crawler import DDMEducationCrawler
 from crawlers.ddm_news_crawler import crawl_ddm_news
 from crawlers.ddm_reserve_crawler import DDMReserveCrawler
 import boto3
@@ -13,10 +13,6 @@ import os
 def upload_to_s3(data, key, bucket_name="test-dondaemoon-school-20250822"):
     """S3에 데이터 업로드"""
     s3_client = boto3.client("s3")
-
-    # _test 접미사 추가 (테스트 환경)
-    if not key.endswith("_test.json"):
-        key = key.replace(".json", "_test.json")
 
     try:
         s3_client.put_object(
@@ -46,23 +42,31 @@ def main():
     try:
         warak_data = crawl_warak_programs()
         results["warak"] = {
-            "count": len(warak_data),
-            "status": "success" if warak_data else "no_data",
+            "count": len(warak_data) if warak_data else 0,
+            "status": "success",
         }
 
-        # S3 업로드
-        if warak_data:
-            upload_data = {
-                "data": warak_data,
-                "count": len(warak_data),
-                "updated_at": datetime.now().isoformat(),
-            }
-            upload_to_s3(upload_data, "dynamic_programs/warak_programs_test.json")
+        # 빈 데이터여도 업로드
+        upload_data = {
+            "data": warak_data if warak_data else [],
+            "count": len(warak_data) if warak_data else 0,
+            "updated_at": datetime.now().isoformat(),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/warak_programs.json")
+
     except Exception as e:
         print(f"❌ 와락 크롤링 실패: {e}")
         results["warak"] = {"status": "failed", "error": str(e)}
+        # 실패해도 빈 파일 업로드
+        upload_data = {
+            "data": [],
+            "count": 0,
+            "updated_at": datetime.now().isoformat(),
+            "error": str(e),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/warak_programs.json")
 
-    # 2. 교육지원센터 크롤링 - 클래스 사용
+    # 2. 교육지원센터 크롤링
     print("\n[2/4] 교육지원센터 크롤링...")
     try:
         edu_crawler = DDMEducationCrawler()
@@ -76,62 +80,85 @@ def main():
 
         results["ddm_edu"] = {
             "count": edu_count,
-            "status": "success" if ddm_edu_data else "no_data",
+            "status": "success",
         }
 
-        # S3 업로드
-        if ddm_edu_data:
-            upload_data = {
-                "data": ddm_edu_data,
-                "updated_at": datetime.now().isoformat(),
-            }
-            upload_to_s3(upload_data, "dynamic_programs/ddm_edu_programs_test.json")
+        # 빈 데이터여도 업로드
+        upload_data = {
+            "data": ddm_edu_data if ddm_edu_data else {},
+            "updated_at": datetime.now().isoformat(),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_edu_programs.json")
+
     except Exception as e:
         print(f"❌ 교육지원센터 크롤링 실패: {e}")
         results["ddm_edu"] = {"status": "failed", "error": str(e)}
+        # 실패해도 빈 파일 업로드
+        upload_data = {
+            "data": {},
+            "updated_at": datetime.now().isoformat(),
+            "error": str(e),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_edu_programs.json")
 
     # 3. 교육소식 크롤링
     print("\n[3/4] 동대문구청 교육소식 크롤링...")
     try:
         ddm_news_data = crawl_ddm_news()
         results["ddm_news"] = {
-            "count": len(ddm_news_data),
-            "status": "success" if ddm_news_data else "no_data",
+            "count": len(ddm_news_data) if ddm_news_data else 0,
+            "status": "success",
         }
 
-        # S3 업로드
-        if ddm_news_data:
-            upload_data = {
-                "data": ddm_news_data,
-                "count": len(ddm_news_data),
-                "updated_at": datetime.now().isoformat(),
-            }
-            upload_to_s3(upload_data, "dynamic_programs/ddm_news_test.json")
+        # 빈 데이터여도 업로드
+        upload_data = {
+            "data": ddm_news_data if ddm_news_data else [],
+            "count": len(ddm_news_data) if ddm_news_data else 0,
+            "updated_at": datetime.now().isoformat(),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_news.json")
+
     except Exception as e:
         print(f"❌ 교육소식 크롤링 실패: {e}")
         results["ddm_news"] = {"status": "failed", "error": str(e)}
+        # 실패해도 빈 파일 업로드
+        upload_data = {
+            "data": [],
+            "count": 0,
+            "updated_at": datetime.now().isoformat(),
+            "error": str(e),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_news.json")
 
-    # 4. 예약포털 크롤링 - 클래스 사용
+    # 4. 예약포털 크롤링
     print("\n[4/4] 동대문구 예약포털 크롤링...")
     try:
         reserve_crawler = DDMReserveCrawler()
         ddm_reserve_data = reserve_crawler.crawl_all()
         results["ddm_reserve"] = {
-            "count": len(ddm_reserve_data),
-            "status": "success" if ddm_reserve_data else "no_data",
+            "count": len(ddm_reserve_data) if ddm_reserve_data else 0,
+            "status": "success",
         }
 
-        # S3 업로드
-        if ddm_reserve_data:
-            upload_data = {
-                "data": ddm_reserve_data,
-                "count": len(ddm_reserve_data),
-                "updated_at": datetime.now().isoformat(),
-            }
-            upload_to_s3(upload_data, "dynamic_programs/ddm_reserve_test.json")
+        # 빈 데이터여도 업로드
+        upload_data = {
+            "data": ddm_reserve_data if ddm_reserve_data else [],
+            "count": len(ddm_reserve_data) if ddm_reserve_data else 0,
+            "updated_at": datetime.now().isoformat(),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_reserve.json")
+
     except Exception as e:
         print(f"❌ 예약포털 크롤링 실패: {e}")
         results["ddm_reserve"] = {"status": "failed", "error": str(e)}
+        # 실패해도 빈 파일 업로드
+        upload_data = {
+            "data": [],
+            "count": 0,
+            "updated_at": datetime.now().isoformat(),
+            "error": str(e),
+        }
+        upload_to_s3(upload_data, "dynamic_programs/ddm_reserve.json")
 
     # 최종 결과 출력
     print("\n" + "=" * 60)
@@ -142,9 +169,10 @@ def main():
         if result["status"] == "success":
             count = result.get("count", 0)
             total_count += count
-            print(f"✅ {name}: {count}개")
-        elif result["status"] == "no_data":
-            print(f"⚠️ {name}: 데이터 없음")
+            if count > 0:
+                print(f"✅ {name}: {count}개")
+            else:
+                print(f"⚠️ {name}: 데이터 없음 (0개)")
         else:
             print(f"❌ {name}: 실패 - {result.get('error', 'Unknown error')}")
 

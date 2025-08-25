@@ -356,7 +356,7 @@ if __name__ == "__main__":
             print(f"- {category}: {len(data)}개")
     print("=" * 30)
 
-    output_filename = "ddm_education_center_all.json"
+    output_filename = "ddm_edu_programs_test.json"
     with open(output_filename, "w", encoding="utf-8") as f:
         json.dump(all_crawled_data, f, ensure_ascii=False, indent=4)
 
