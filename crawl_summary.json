@@ -1,0 +1,22 @@
+{
+  "results": {
+    "warak": {
+      "count": 0,
+      "status": "no_data"
+    },
+    "ddm_edu": {
+      "count": 9,
+      "status": "success"
+    },
+    "ddm_news": {
+      "count": 28,
+      "status": "success"
+    },
+    "ddm_reserve": {
+      "count": 40,
+      "status": "success"
+    }
+  },
+  "total_count": 77,
+  "completed_at": "2025-08-26T04:16:15.529692"
+}

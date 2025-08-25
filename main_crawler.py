@@ -1,126 +1,166 @@
 # main_crawler.py
-import sys
+
 import json
-import os
-import boto3
 from datetime import datetime
-from crawlers import warak_crawler
-from crawlers.ddm_edu_crawler import DDMEducationCrawler
+from crawlers.warak_crawler import crawl_warak_programs
+from crawlers.ddm_edu_crawler import DDMEducationCrawler  # 클래스 import
+from crawlers.ddm_news_crawler import crawl_ddm_news
+from crawlers.ddm_reserve_crawler import DDMReserveCrawler
+import boto3
+import os
+
+
+def upload_to_s3(data, key, bucket_name="test-dondaemoon-school-20250822"):
+    """S3에 데이터 업로드"""
+    s3_client = boto3.client("s3")
+
+    # _test 접미사 추가 (테스트 환경)
+    if not key.endswith("_test.json"):
+        key = key.replace(".json", "_test.json")
+
+    try:
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",
+        )
+        print(f"✅ S3 업로드 성공: {key}")
+        return True
+    except Exception as e:
+        print(f"❌ S3 업로드 실패 ({key}): {e}")
+        return False
 
 
 def main():
-    # 테스트 모드 확인 (set CRAWLER_TEST_MODE=true or false)
-    test_mode = os.environ.get("CRAWLER_TEST_MODE", "false").lower() == "true"
-
-    if test_mode:
-        print("\n" + "=" * 60)
-        print("          전체 크롤러 실행 - 테스트 모드")
-        print("          (3개월 범위 데이터 수집)")
-        print("=" * 60 + "\n")
-    else:
-        print("\n" + "=" * 60)
-        print("          전체 크롤러 실행 - 일반 모드")
-        print("=" * 60 + "\n")
+    """모든 크롤러 실행 및 S3 업로드"""
+    print("\n" + "=" * 60)
+    print("   동대문구 교육정보 통합 크롤링 시작")
+    print("   시작 시간:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    print("=" * 60)
 
     results = {}
 
-    # 1. 와락 크롤링
-    print("\n[1/2] 와락 센터 크롤링 시작...")
-    print("-" * 40)
+    # 1. 와락 프로그램 크롤링
+    print("\n[1/4] 와락센터 프로그램 크롤링...")
     try:
-        warak_data = warak_crawler.crawl_warak_programs()
+        warak_data = crawl_warak_programs()
         results["warak"] = {
-            "data": warak_data,
             "count": len(warak_data),
-            "updated": datetime.now().isoformat(),
-            "test_mode": test_mode,
+            "status": "success" if warak_data else "no_data",
         }
-        print(f"✅ 와락 크롤링 완료: {len(warak_data)}개 프로그램")
+
+        # S3 업로드
+        if warak_data:
+            upload_data = {
+                "data": warak_data,
+                "count": len(warak_data),
+                "updated_at": datetime.now().isoformat(),
+            }
+            upload_to_s3(upload_data, "dynamic_programs/warak_programs_test.json")
     except Exception as e:
-        results["warak"] = {"error": str(e), "test_mode": test_mode}
-        print(f"❌ 와락 크롤링 실패: {str(e)}")
+        print(f"❌ 와락 크롤링 실패: {e}")
+        results["warak"] = {"status": "failed", "error": str(e)}
 
-    # 2. 동대문구 교육지원센터 크롤링
-    print("\n[2/2] 교육지원센터 크롤링 시작...")
-    print("-" * 40)
+    # 2. 교육지원센터 크롤링 - 클래스 사용
+    print("\n[2/4] 교육지원센터 크롤링...")
     try:
-        ddm_edu_crawler = DDMEducationCrawler()
-        ddm_edu_data = ddm_edu_crawler.crawl_all()
+        edu_crawler = DDMEducationCrawler()
+        ddm_edu_data = edu_crawler.crawl_all()
 
-        # 카테고리별 개수 집계
-        summary = {}
+        # 각 카테고리별 개수 계산
+        edu_count = 0
         for key, value in ddm_edu_data.items():
             if isinstance(value, list):
-                summary[key] = len(value)
+                edu_count += len(value)
 
         results["ddm_edu"] = {
-            "data": ddm_edu_data,
-            "summary": summary,
-            "updated": ddm_edu_data.get("updated_at", datetime.now().isoformat()),
-            "test_mode": test_mode,
+            "count": edu_count,
+            "status": "success" if ddm_edu_data else "no_data",
         }
 
-        print(f"✅ 교육지원센터 크롤링 완료:")
-        for category, count in summary.items():
-            print(f"   - {category}: {count}개")
-
+        # S3 업로드
+        if ddm_edu_data:
+            upload_data = {
+                "data": ddm_edu_data,
+                "updated_at": datetime.now().isoformat(),
+            }
+            upload_to_s3(upload_data, "dynamic_programs/ddm_edu_programs_test.json")
     except Exception as e:
-        results["ddm_edu"] = {"error": str(e), "test_mode": test_mode}
-        print(f"❌ 교육지원센터 크롤링 실패: {str(e)}")
+        print(f"❌ 교육지원센터 크롤링 실패: {e}")
+        results["ddm_edu"] = {"status": "failed", "error": str(e)}
 
-    # 3. 개별 파일로 저장
+    # 3. 교육소식 크롤링
+    print("\n[3/4] 동대문구청 교육소식 크롤링...")
+    try:
+        ddm_news_data = crawl_ddm_news()
+        results["ddm_news"] = {
+            "count": len(ddm_news_data),
+            "status": "success" if ddm_news_data else "no_data",
+        }
+
+        # S3 업로드
+        if ddm_news_data:
+            upload_data = {
+                "data": ddm_news_data,
+                "count": len(ddm_news_data),
+                "updated_at": datetime.now().isoformat(),
+            }
+            upload_to_s3(upload_data, "dynamic_programs/ddm_news_test.json")
+    except Exception as e:
+        print(f"❌ 교육소식 크롤링 실패: {e}")
+        results["ddm_news"] = {"status": "failed", "error": str(e)}
+
+    # 4. 예약포털 크롤링 - 클래스 사용
+    print("\n[4/4] 동대문구 예약포털 크롤링...")
+    try:
+        reserve_crawler = DDMReserveCrawler()
+        ddm_reserve_data = reserve_crawler.crawl_all()
+        results["ddm_reserve"] = {
+            "count": len(ddm_reserve_data),
+            "status": "success" if ddm_reserve_data else "no_data",
+        }
+
+        # S3 업로드
+        if ddm_reserve_data:
+            upload_data = {
+                "data": ddm_reserve_data,
+                "count": len(ddm_reserve_data),
+                "updated_at": datetime.now().isoformat(),
+            }
+            upload_to_s3(upload_data, "dynamic_programs/ddm_reserve_test.json")
+    except Exception as e:
+        print(f"❌ 예약포털 크롤링 실패: {e}")
+        results["ddm_reserve"] = {"status": "failed", "error": str(e)}
+
+    # 최종 결과 출력
     print("\n" + "=" * 60)
-    print("          결과 저장")
+    print("   크롤링 완료 요약")
     print("=" * 60)
-
-    for site_name, site_data in results.items():
-        if test_mode:
-            filename = f"{site_name}_programs_test.json"
-        else:
-            filename = f"{site_name}_programs.json"
-
-        with open(filename, "w", encoding="utf-8") as f:
-            json.dump(site_data, f, ensure_ascii=False, indent=2)
-        print(f"📁 {filename} 저장 완료")
-
-        # S3 업로드 (GitHub Actions 환경에서만)
-        if "GITHUB_ACTIONS" in os.environ:
-            try:
-                s3 = boto3.client("s3")
-                s3_key = f"dynamic_programs/{filename}"
-                s3.upload_file(filename, "test-dondaemoon-school-20250822", s3_key)
-                print(f"☁️  S3 업로드 완료: {s3_key}")
-            except Exception as e:
-                print(f"⚠️  S3 업로드 실패: {str(e)}")
-
-    # 4. 최종 요약
-    print("\n" + "=" * 60)
-    print("          크롤링 완료 요약")
-    print("=" * 60)
-
     total_count = 0
-    for site_name, site_data in results.items():
-        if "error" not in site_data:
-            if site_name == "warak":
-                count = site_data.get("count", 0)
-                print(f"• {site_name}: {count}개 프로그램")
-                total_count += count
-            elif site_name == "ddm_edu":
-                summary = site_data.get("summary", {})
-                site_total = sum(summary.values())
-                print(f"• {site_name}: {site_total}개 항목")
-                for category, count in summary.items():
-                    print(f"  - {category}: {count}개")
-                total_count += site_total
+    for name, result in results.items():
+        if result["status"] == "success":
+            count = result.get("count", 0)
+            total_count += count
+            print(f"✅ {name}: {count}개")
+        elif result["status"] == "no_data":
+            print(f"⚠️ {name}: 데이터 없음")
         else:
-            print(f"• {site_name}: 오류 발생")
+            print(f"❌ {name}: 실패 - {result.get('error', 'Unknown error')}")
 
-    print(f"\n총 {total_count}개 항목 수집")
+    print(f"\n총 {total_count}개 데이터 수집 완료")
+    print("완료 시간:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    if test_mode:
-        print("\n⚠️  테스트 모드로 실행됨 (3개월 범위 데이터)")
+    # 로컬 요약 파일 저장
+    summary = {
+        "results": results,
+        "total_count": total_count,
+        "completed_at": datetime.now().isoformat(),
+    }
+    with open("crawl_summary.json", "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
 
-    print("=" * 60)
+    return results
 
 
 if __name__ == "__main__":
