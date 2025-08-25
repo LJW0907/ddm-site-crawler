@@ -250,51 +250,54 @@ class DDMEducationCrawler:
         }
         return item, date_str
 
-    def crawl_all(self):
-        """모든 섹션을 규칙에 맞게 크롤링"""
-        results = {
-            "notices": self._crawl_notices(
-                {"bbsNo": "175", "key": "3646"}, self._parse_notice_row, "공지사항"
-            ),
-            "expo_university": self._crawl_sorted_board(
-                {
-                    "key": "3634",
-                    "expoTypeNo": "7",
-                    "url_path": "/jinhak/selectUserExpoList.do",
-                },
-                self._parse_expo_row,
-                "대입수시박람회",
-            ),
-            "camps": self._crawl_sorted_board(
-                {"bbsNo": "332", "key": "3622"}, self._parse_board_row, "방학캠프"
-            ),
-            "parent_programs": self._crawl_sorted_board(
-                {"bbsNo": "333", "key": "3623"}, self._parse_board_row, "학부모역량강화"
-            ),
-            "expo_college": self._crawl_sorted_board(
-                {
-                    "key": "3635",
-                    "expoTypeNo": "2",
-                    "url_path": "/jinhak/selectUserExpoList.do",
-                },
-                self._parse_expo_row,
-                "전문대학정보박람회",
-            ),
-            "expo_highschool": self._crawl_sorted_board(
-                {
-                    "key": "3636",
-                    "expoTypeNo": "1",
-                    "url_path": "/jinhak/selectUserExpoList.do",
-                },
-                self._parse_expo_row,
-                "고교입학박람회",
-            ),
-            "parent_lectures": self._crawl_unsorted_board(
-                {"bbsNo": "345", "key": "3632"}, self._parse_board_row, "학부모진학교실"
-            ),
-        }
-        results["updated_at"] = datetime.now().isoformat()
-        return results
+
+def crawl_all(self):
+    """모든 섹션을 규칙에 맞게 크롤링"""
+    results = {
+        "notices": self._crawl_notices(
+            {"bbsNo": "175", "key": "3646"}, self._parse_notice_row, "공지사항"
+        ),
+        "expo_university": self._crawl_sorted_board(
+            {
+                "key": "3634",
+                "expoTypeNo": "7",
+                "url_path": "/jinhak/selectUserExpoList.do",
+            },
+            self._parse_expo_row,
+            "대입수시박람회",
+        ),
+        "camps": self._crawl_sorted_board(
+            {"bbsNo": "332", "key": "3622"}, self._parse_board_row, "방학캠프"
+        ),
+        "parent_programs": self._crawl_sorted_board(
+            {"bbsNo": "333", "key": "3623"}, self._parse_board_row, "학부모역량강화"
+        ),
+        "expo_college": self._crawl_sorted_board(
+            {
+                "key": "3635",
+                "expoTypeNo": "2",
+                "url_path": "/jinhak/selectUserExpoList.do",
+            },
+            self._parse_expo_row,
+            "전문대학정보박람회",
+        ),
+        "expo_highschool": self._crawl_sorted_board(
+            {
+                "key": "3636",
+                "expoTypeNo": "1",
+                "url_path": "/jinhak/selectUserExpoList.do",
+            },
+            self._parse_expo_row,
+            "고교입학박람회",
+        ),
+        "parent_lectures": self._crawl_unsorted_board(
+            {"bbsNo": "345", "key": "3632"}, self._parse_board_row, "학부모진학교실"
+        ),
+    }
+    results["updated_at"] = datetime.now().isoformat()
+    # self.test_mode 제거!
+    # results["test_mode"] = self.test_mode  ← 이 줄 삭제
+    return results
 
 
 # --- 테스트 실행 코드 ---

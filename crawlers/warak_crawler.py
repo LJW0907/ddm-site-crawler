@@ -159,12 +159,8 @@ def crawl_warak_programs():
     return programs
 
 
-# 테스트 실행 코드
+# 테스트 실행 코드 - main 함수 안이 아닌 __main__ 부분
 if __name__ == "__main__":
-    # 테스트 모드 활성화하려면:
-    # export CRAWLER_TEST_MODE=true
-    # python crawlers/warak_crawler.py
-
     programs = crawl_warak_programs()
 
     print("\n" + "=" * 30)
@@ -173,12 +169,12 @@ if __name__ == "__main__":
     print(f"수집된 프로그램 수: {len(programs)}개")
 
     # 결과 파일 저장
-    output_filename = "warak_programs_test.json"
+    output_filename = "warak_programs.json"  # _test 제거
     result = {
         "data": programs,
         "count": len(programs),
         "updated": datetime.now().isoformat(),
-        "test_mode": os.environ.get("CRAWLER_TEST_MODE", "false").lower() == "true",
+        # "test_mode": 제거
     }
 
     with open(output_filename, "w", encoding="utf-8") as f:
