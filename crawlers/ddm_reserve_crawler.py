@@ -142,10 +142,10 @@ class DDMReserveCrawler:
 
         all_results = []
 
-        # 1. 전체프로그램 크롤링 (접수예정, 접수중)
+        # 1. 전체프로그램 크롤링 (접수예정, 접수중) - URL 파라미터 추가
         program_urls = {
-            "접수예정": "https://www.ddm.go.kr/reserve/selectDongdaemunUserCourseList.do?key=1529&receptionStts=TBCCPT",
-            "접수중": "https://www.ddm.go.kr/reserve/selectDongdaemunUserCourseList.do?key=1529&receptionStts=ACCPT",
+            "접수예정": "https://www.ddm.go.kr/reserve/selectDongdaemunUserCourseList.do?searchEduInstSe=&key=1529&searchEdcKey=&searchEdcRealm=&searchTime=%EC%A0%91%EC%88%98%EA%B8%B0%EA%B0%84&timeBgnde=&timeEndde=&receptionStts=TBCCPT&searchCnd=SJ&searchKrwd=",
+            "접수중": "https://www.ddm.go.kr/reserve/selectDongdaemunUserCourseList.do?searchEduInstSe=&key=1529&searchEdcKey=&searchEdcRealm=&searchTime=%EC%A0%91%EC%88%98%EA%B8%B0%EA%B0%84&timeBgnde=&timeEndde=&receptionStts=ACCPT&searchCnd=SJ&searchKrwd=",
         }
 
         print("1. [전체프로그램] 크롤링")
