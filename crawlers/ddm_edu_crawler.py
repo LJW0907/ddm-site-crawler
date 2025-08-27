@@ -6,7 +6,7 @@ from datetime import datetime
 import re
 from dateutil.relativedelta import relativedelta
 import os
-from urllib.parse import urljoin  # urljoin 추가
+from urllib.parse import urljoin
 
 
 class DDMEducationCrawler:
@@ -17,10 +17,8 @@ class DDMEducationCrawler:
         self.headers = {"User-Agent": "Mozilla/5.0"}
         self.today = datetime.now().date()
 
-        # 테스트 모드 체크 (환경변수로 제어)
         self.test_mode = os.environ.get("CRAWLER_TEST_MODE", "false").lower() == "true"
 
-        # 테스트 모드일 때는 3개월 전까지, 일반 모드는 기존대로
         if self.test_mode:
             self.date_threshold = self.today - relativedelta(months=3)
             print(
@@ -31,8 +29,6 @@ class DDMEducationCrawler:
 
     def _is_future_event(self, date_string):
         """테스트 모드에서는 3개월 전까지, 일반 모드에서는 미래 이벤트만"""
-        # (기존 코드와 동일)
-        # YYYY-MM-DD 형식
         dates_found_ymd = re.findall(r"(\d{4})-(\d{2})-(\d{2})", date_string)
         if dates_found_ymd:
             try:
@@ -42,22 +38,17 @@ class DDMEducationCrawler:
             except ValueError:
                 return True
 
-        # 한글 날짜 형식: "7월 29일(화), 7월 31일(목)" 처리
         korean_dates = re.findall(r"(\d{1,2})월\s*(\d{1,2})일", date_string)
         if korean_dates:
             try:
-                # 마지막 날짜 기준으로 판단 (종료일)
                 month, day = map(int, korean_dates[-1])
                 event_date = datetime(self.today.year, month, day).date()
-
                 if event_date < self.date_threshold and self.today.month < month:
                     event_date = datetime(self.today.year - 1, month, day).date()
-
                 return event_date >= self.date_threshold
             except ValueError:
                 return True
 
-        # M/D 형식 (예: 8/13)
         dates_found_md = re.findall(r"(\d{1,2})/(\d{1,2})", date_string)
         if dates_found_md:
             try:
@@ -69,9 +60,7 @@ class DDMEducationCrawler:
             except ValueError:
                 return True
 
-        return True  # 날짜 정보가 없으면 포함
-
-    # --- ⬇️ 여기부터 세 개의 함수가 수정되었습니다 ⬇️ ---
+        return True
 
     def _crawl_sorted_board(self, params, parser_func, content_type):
         """날짜 순으로 정렬된 게시판을 크롤링"""
@@ -81,7 +70,6 @@ class DDMEducationCrawler:
         max_pages = 10 if self.test_mode else 5
 
         while page <= max_pages:
-            # ⭐ 수정점: 원본 params를 수정하지 않도록 복사본 생성
             params_copy = params.copy()
             params_copy["pageIndex"] = page
             url_path = params_copy.pop("url_path", "/jinhak/selectBbsNttList.do")
@@ -127,7 +115,6 @@ class DDMEducationCrawler:
         max_pages = 10 if self.test_mode else 5
 
         while page <= max_pages:
-            # ⭐ 수정점: 원본 params를 수정하지 않도록 복사본 생성
             params_copy = params.copy()
             params_copy["pageIndex"] = page
             url_path = params_copy.pop("url_path", "/jinhak/selectBbsNttList.do")
@@ -176,7 +163,6 @@ class DDMEducationCrawler:
         max_pages = 10 if self.test_mode else 5
 
         while page <= max_pages:
-            # ⭐ 수정점: 원본 params를 수정하지 않도록 복사본 생성
             params_copy = params.copy()
             params_copy["pageIndex"] = page
             url_path = params_copy.pop("url_path", "/jinhak/selectBbsNttList.do")
@@ -214,63 +200,66 @@ class DDMEducationCrawler:
         print(f"   -> {len(items)}개 항목 수집 완료")
         return items
 
-    # --- ⬆️ 위의 세 함수만 수정하면 됩니다. 아래는 동일 ⬆️ ---
+    # --- ⬇️ 여기부터 두 개의 함수가 수정되었습니다 ⬇️ ---
 
     def _parse_board_row(self, row, content_type):
-        # (기존 코드와 동일)
         cols = row.find_all("td")
+        # "게시물이 없습니다" 행은 보통 colspan 속성을 가지므로, td 개수가 다릅니다.
         if len(cols) != 7:
             return None, None
+
         event_date_str = cols[2].text.strip()
         is_valid = self._is_future_event(event_date_str)
         apply_button = cols[6].find("a")
         title_tag = cols[1].find("a")
+
+        # ⭐ 수정된 부분: title_tag가 None일 경우를 대비하여 URL을 안전하게 추출
+        detail_url = ""
+        if apply_button and apply_button.has_attr("href"):
+            detail_url = apply_button["href"]
+        elif title_tag and title_tag.has_attr("href"):
+            detail_url = title_tag.get("href", "")
+
         item = {
             "title": title_tag.text.strip() if title_tag else cols[1].text.strip(),
             "date": event_date_str,
             "target": cols[4].text.strip(),
             "location": cols[5].text.strip(),
             "status": apply_button.text.strip() if apply_button else "마감",
-            "url": urljoin(
-                self.base_url,
-                (
-                    apply_button["href"]
-                    if apply_button and apply_button.has_attr("href")
-                    else title_tag.get("href", "")
-                ),
-            ),
+            "url": urljoin(self.base_url, detail_url),
             "type": content_type,
         }
         return item, is_valid
 
     def _parse_expo_row(self, row, content_type):
-        # (기존 코드와 동일)
         cols = row.find_all("td")
+        # "게시물이 없습니다" 행은 보통 colspan 속성을 가지므로, td 개수가 다릅니다.
         if len(cols) != 5:
             return None, None
+
         registration_period_str = cols[3].text.strip()
         is_valid = self._is_future_event(registration_period_str)
         apply_button = cols[4].find("a")
         title_tag = cols[1].find("a")
+
+        # ⭐ 수정된 부분: title_tag가 None일 경우를 대비하여 URL을 안전하게 추출
+        detail_url = ""
+        if apply_button and apply_button.has_attr("href"):
+            detail_url = apply_button["href"]
+        elif title_tag and title_tag.has_attr("href"):
+            detail_url = title_tag.get("href", "")
+
         item = {
             "title": title_tag.text.strip() if title_tag else cols[1].text.strip(),
             "event_period": cols[2].text.strip(),
             "registration_period": registration_period_str,
             "status": apply_button.text.strip() if apply_button else "마감",
-            "url": urljoin(
-                self.base_url,
-                (
-                    apply_button["href"]
-                    if apply_button and apply_button.has_attr("href")
-                    else title_tag.get("href", "")
-                ),
-            ),
+            "url": urljoin(self.base_url, detail_url),
             "type": content_type,
         }
         return item, is_valid
 
     def _parse_notice_row(self, row, content_type):
-        # (기존 코드와 동일)
         cols = row.find_all("td")
         if len(cols) != 5:
             return None, None
@@ -288,7 +277,6 @@ class DDMEducationCrawler:
 
     def crawl_all(self):
         """모든 섹션을 규칙에 맞게 크롤링"""
-        # (기존 코드와 동일)
         results = {
             "notices": self._crawl_notices(
                 {"bbsNo": "175", "key": "3646"}, self._parse_notice_row, "공지사항"
@@ -340,7 +328,7 @@ if __name__ == "__main__":
     all_crawled_data = crawler.crawl_all()
 
     print("\n" + "=" * 30)
-    print("      크롤링 결과 요약")
+    print("       크롤링 결과 요약")
     print("=" * 30)
     for category, data in all_crawled_data.items():
         if isinstance(data, list):
