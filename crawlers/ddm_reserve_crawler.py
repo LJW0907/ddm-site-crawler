@@ -1,12 +1,9 @@
 # crawlers/ddm_reserve_crawler.py
-
 import time
 from bs4 import BeautifulSoup
 from datetime import datetime
 import json
 from urllib.parse import urljoin
-
-# --- Selenium 관련 라이브러리 추가 ---
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -17,32 +14,24 @@ class DDMReserveCrawler:
     """동대문구 예약포털 크롤러 (전체프로그램 & 온라인접수 통합)"""
 
     def __init__(self):
-        """크롤러 초기화. requests 세션 대신 헤더 정보만 유지"""
+        """크롤러 초기화"""
         self.base_url = "https://www.ddm.go.kr"
-        # Selenium에서도 User-Agent는 중요하므로 헤더 정보는 유지합니다.
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        }
-        # requests.Session 관련 코드는 제거합니다.
-        # self.session = requests.Session()
-        # self.session.headers.update(self.headers)
 
     def _get_soup(self, url, params=None):
         """
-        [수정된 부분]
         Selenium을 사용해 BeautifulSoup 객체를 반환하는 헬퍼 함수.
         실제 브라우저를 구동하여 자바스크립트 렌더링과 봇 차단을 우회합니다.
         """
-        driver = None  # driver 변수 초기화
+        driver = None
         try:
             # Chrome 옵션 설정
             options = Options()
-            options.add_argument("--headless")  # 브라우저 창을 띄우지 않는 옵션
+            options.add_argument("--headless")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument(
-                f"user-agent={self.headers['User-Agent']}"
-            )  # User-Agent 설정
+                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            )
 
             # ChromeDriver 자동 설치 및 서비스 실행
             service = Service(ChromeDriverManager().install())
@@ -51,26 +40,19 @@ class DDMReserveCrawler:
             # 페이지 접속
             driver.get(url)
 
-            # 페이지의 모든 콘텐츠(자바스크립트 포함)가 로드될 때까지 잠시 대기
+            # 페이지 로딩 대기
             time.sleep(3)
 
-            # 렌더링된 페이지의 HTML 소스를 가져옴
+            # 렌더링된 HTML을 BeautifulSoup으로 변환
             html = driver.page_source
-
-            # BeautifulSoup 객체로 변환하여 반환
             return BeautifulSoup(html, "lxml")
 
         except Exception as e:
             print(f"Error fetching {url} with Selenium: {e}")
             return None
         finally:
-            # 드라이버가 성공적으로 생성되었을 경우에만 종료
             if driver:
                 driver.quit()
-
-    # ==================================================================
-    # 아래의 파싱 및 실행 로직은 기존 코드와 동일합니다. (수정 없음)
-    # ==================================================================
 
     def _parse_programs(self, soup, status):
         """'전체프로그램' 페이지의 목록을 파싱"""
