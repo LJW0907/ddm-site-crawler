@@ -10,8 +10,13 @@ import boto3
 import os
 
 
-def upload_to_s3(data, key, bucket_name="test-dondaemoon-school-20250822"):
+def upload_to_s3(data, key, bucket_name=None):
     """S3에 데이터 업로드"""
+    if bucket_name is None:
+        bucket_name = os.environ.get(
+            "S3_BUCKET_NAME", "test-dondaemoon-school-20250822"
+        )
+
     s3_client = boto3.client("s3")
 
     try:

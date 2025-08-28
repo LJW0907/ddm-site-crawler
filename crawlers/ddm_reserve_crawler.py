@@ -1,13 +1,15 @@
 # crawlers/ddm_reserve_crawler.py
 import time
+import json
+
 from bs4 import BeautifulSoup
 from datetime import datetime
-import json
 from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from .common import get_chrome_driver  # 추가
 
 
 class DDMReserveCrawler:
@@ -24,22 +26,10 @@ class DDMReserveCrawler:
         """
         driver = None
         try:
-            # Chrome 옵션 설정
-            options = Options()
-            options.add_argument("--headless")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument(
-                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            )
-
-            # ChromeDriver 자동 설치 및 서비스 실행
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=options)
+            driver = get_chrome_driver()
 
             # 페이지 접속
             driver.get(url)
-
             # 페이지 로딩 대기
             time.sleep(3)
 

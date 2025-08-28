@@ -1,6 +1,10 @@
 # crawlers/warak_crawler.py
 import time
 import re
+import json
+import boto3
+import os
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -9,9 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import json
-import boto3
-import os
+from .common import get_chrome_driver  # 추가
 
 
 def is_program_valid(title, test_mode=False, prev_month=None):
@@ -64,22 +66,7 @@ def crawl_warak_programs():
     target_url = "https://www.ddmwarak.com/book-online?category=44962198-7cc6-4efd-83be-39d4dd7f08d8"
 
     # GitHub Actions 환경 체크
-    if os.environ.get("GITHUB_ACTIONS"):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920x1080")
-        driver = webdriver.Chrome(options=options)
-    else:
-        # 로컬 환경용 설정
-        from webdriver_manager.chrome import ChromeDriverManager
-
-        service = Service(ChromeDriverManager().install())
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        driver = webdriver.Chrome(service=service, options=options)
+    driver = get_chrome_driver()
 
     programs = []
 

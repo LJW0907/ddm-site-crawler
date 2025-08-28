@@ -2,6 +2,9 @@
 
 import time
 import re
+import json
+import os
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -10,8 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import json
-import os
+from .common import get_chrome_driver
 
 
 def crawl_ddm_news():
@@ -20,22 +22,7 @@ def crawl_ddm_news():
     URL_TEMPLATE = "https://www.ddm.go.kr/www/selectBbsNttList.do?key=575&bbsNo=38&searchCtgry=%ea%b5%90%ec%9c%a1&pageIndex={page}"
 
     # GitHub Actions 환경 체크
-    if os.environ.get("GITHUB_ACTIONS"):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920x1080")
-        driver = webdriver.Chrome(options=options)
-    else:
-        # 로컬 환경용 설정
-        from webdriver_manager.chrome import ChromeDriverManager
-
-        service = Service(ChromeDriverManager().install())
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        driver = webdriver.Chrome(service=service, options=options)
+    driver = get_chrome_driver()
 
     # 크롤링 범위 설정: 지난달 1일
     today = datetime.now().date()
